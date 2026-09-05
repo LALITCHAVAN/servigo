@@ -1,0 +1,3 @@
+import Service from "../models/Service.js";
+export const getServices = async (req,res,next) => { try { const q={}; if(req.query.category) q.category=req.query.category; const services=await Service.find(q).sort({popular:-1,name:1}).lean(); res.json({success:true,services}); } catch(e){next(e);} };
+export const getService = async (req,res,next) => { try { const service=await Service.findOne({$or:[{slug:req.params.slug},{id:req.params.slug}]}).lean(); if(!service)return res.status(404).json({success:false,message:"Service not found"}); res.json({success:true,service}); } catch(e){next(e);} };

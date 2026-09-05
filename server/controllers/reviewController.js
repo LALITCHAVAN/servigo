@@ -1,0 +1,3 @@
+import Review from "../models/Review.js";
+export const getReviews = async (req,res,next) => { try { const q=req.query.serviceName?{serviceUsed:new RegExp(req.query.serviceName,"i")} : {}; res.json({success:true,reviews:await Review.find(q).sort({createdAt:-1}).lean()}); } catch(e){next(e);} };
+export const createReview = async (req,res,next) => { try { const {rating,text}=req.body; if(!rating||!text)return res.status(400).json({success:false,message:"Rating and text are required"}); const review=await Review.create({...req.body,user:req.user._id,author:req.user.name,avatar:req.user.avatar}); res.status(201).json({success:true,review}); } catch(e){next(e);} };

@@ -1,0 +1,4 @@
+import Professional from "../models/Professional.js";
+import mongoose from "mongoose";
+export const getProfessionals = async (req,res,next) => { try { const q=req.query.location?{location:new RegExp(req.query.location,"i")} : {}; res.json({success:true,professionals:await Professional.find(q).sort({rating:-1}).lean()}); } catch(e){next(e);} };
+export const getProfessional = async (req,res,next) => { try { const q=mongoose.isValidObjectId(req.params.id)?{$or:[{id:req.params.id},{_id:req.params.id}]}:{id:req.params.id}; const p=await Professional.findOne(q).lean(); if(!p)return res.status(404).json({success:false,message:"Professional not found"}); res.json({success:true,professional:p}); } catch(e){next(e);} };
