@@ -70,10 +70,10 @@ app.use(errorHandler);
 // ==========================================
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
 if (!MONGODB_URI) {
-  console.error("MONGODB_URI is not configured. Set it in server/.env.");
+  console.error("MONGODB_URI (or MONGO_URI) is not configured. Set it in server/.env.");
   process.exitCode = 1;
 } else {
   mongoose.connect(MONGODB_URI)

@@ -186,7 +186,7 @@ Example:
 ```env
 PORT=5000
 
-MONGO_URI=your_mongodb_connection_string
+MONGODB_URI=your_mongodb_connection_string
 
 JWT_SECRET=your_jwt_secret
 
@@ -321,7 +321,7 @@ The following environment variables may be required:
 | Variable     | Description                |
 | ------------ | -------------------------- |
 | `PORT`       | Backend server port        |
-| `MONGO_URI`  | MongoDB connection string  |
+| `MONGODB_URI` (or `MONGO_URI`) | MongoDB connection string |
 | `JWT_SECRET` | JWT authentication secret  |
 | `CLIENT_URL` | Frontend URL               |
 | `SMTP_USER`  | Email service username     |

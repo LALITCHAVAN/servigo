@@ -47,7 +47,12 @@ const reviews = [
 }));
 
 try {
-  await mongoose.connect(process.env.MONGODB_URI);
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!mongoUri) {
+    throw new Error("MONGODB_URI (or MONGO_URI) is not configured.");
+  }
+
+  await mongoose.connect(mongoUri);
   await Promise.all([Service.deleteMany({}), Professional.deleteMany({}), Review.deleteMany({})]);
   await Service.insertMany(services); await Professional.insertMany(professionals); await Review.insertMany(reviews);
   console.log("Seed data inserted."); await mongoose.disconnect();
