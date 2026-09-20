@@ -129,18 +129,48 @@ export const services: Service[] = [
       { question: 'Can you assemble IKEA furniture?', answer: 'Yes, we assemble all types of ready-to-assemble furniture.' },
     ],
   },
-  {
-    id: 's6', slug: 'painting', name: 'Painting', category: 'painting', icon: 'PaintRoller',
-    image: img('6474450'),
-    shortDescription: 'Interior and exterior painting with premium quality paints.',
-    description: 'Refresh your walls with our professional painting services. We use premium paints, prepare surfaces properly, and deliver a flawless finish. Free color consultation included.',
-    startingPrice: 599, rating: 4.7, reviewCount: 680, popular: false, bookedCount: 1500,
-    whatsIncluded: ['Surface preparation', 'Primer coat', '2 coats of paint', 'Furniture covering', 'Cleanup after work', 'Free color consultation'],
-    whatsNotIncluded: ['Textured finishes', 'Wallpaper installation', 'Stencil work', 'Waterproofing'],
-    faqs: [
-      { question: 'How long does painting take?', answer: 'A standard room takes 1-2 days depending on size and condition.' },
-    ],
-  },
+ {
+  id: 's6',
+  slug: 'painting',
+  name: 'Painting',
+  category: 'painting',
+  icon: 'PaintRoller',
+
+  image: 'https://images.unsplash.com/photo-1562259949-e8e768e3d2b5?auto=format&fit=crop&w=1200&q=85',
+
+  shortDescription: 'Interior and exterior painting with premium quality paints.',
+
+  description: 'Refresh your walls with our professional painting services. We use premium paints, prepare surfaces properly, and deliver a flawless finish. Free color consultation included.',
+
+  startingPrice: 599,
+  rating: 4.7,
+  reviewCount: 680,
+  popular: false,
+  bookedCount: 1500,
+
+  whatsIncluded: [
+    'Surface preparation',
+    'Primer coat',
+    '2 coats of paint',
+    'Furniture covering',
+    'Cleanup after work',
+    'Free color consultation'
+  ],
+
+  whatsNotIncluded: [
+    'Textured finishes',
+    'Wallpaper installation',
+    'Stencil work',
+    'Waterproofing'
+  ],
+
+  faqs: [
+    {
+      question: 'How long does painting take?',
+      answer: 'A standard room takes 1-2 days depending on size and condition.'
+    }
+  ],
+},
   {
     id: 's7', slug: 'appliance-repair', name: 'Appliance Repair', category: 'appliance-repair', icon: 'Refrigerator',
     image: img('3998001'),

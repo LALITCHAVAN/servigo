@@ -12,9 +12,7 @@ const api = axios.create({
 
 // Automatically send JWT token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(
-    "servigo_token"
-  );
+  const token = localStorage.getItem("servigo_token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

@@ -8,14 +8,7 @@ import {
 
 import api from "../services/api";
 
-import type {
-  User,
-  UserRole,
-} from "@/types";
-
-// ==========================================
-// CONTEXT TYPE
-// ==========================================
+import type { User, UserRole } from "@/types";
 
 interface AuthContextType {
   user: User | null;
@@ -37,78 +30,85 @@ interface AuthContextType {
   loading: boolean;
 }
 
-function normalizeUser(user: Partial<User> & { _id?: string }): User {
+function normalizeUser(
+  user: Partial<User> & { _id?: string }
+): User {
   const name = user.name?.trim() || "ServiGo User";
+
   return {
     id: user.id || user._id || "",
     name,
     email: user.email || "",
     role: user.role || "customer",
-    avatar: user.avatar || `https://i.pravatar.cc/300?u=${encodeURIComponent(user.email || name)}`,
+    avatar:
+      user.avatar ||
+      `https://i.pravatar.cc/300?u=${encodeURIComponent(
+        user.email || name
+      )}`,
     phone: user.phone || "",
     location: user.location || "",
   };
 }
 
-// ==========================================
-// CREATE CONTEXT
-// ==========================================
-
-const AuthContext = createContext<
-  AuthContextType | undefined
->(undefined);
-
-// ==========================================
-// AUTH PROVIDER
-// ==========================================
+const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 export function AuthProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  // Only true while checking saved login on startup
+  const [loading, setLoading] = useState(true);
 
-  // ========================================
-  // LOAD USER WHEN APP STARTS
-  // ========================================
+  // ==========================================
+  // CHECK EXISTING LOGIN
+  // ==========================================
 
   useEffect(() => {
     const loadUser = async () => {
-      const token = localStorage.getItem(
-        "servigo_token"
-      );
+      const token = localStorage.getItem("servigo_token");
+      const savedUser = localStorage.getItem("servigo_user");
 
-      // No token means no login
       if (!token) {
+        setUser(null);
         setLoading(false);
         return;
       }
 
+      // Restore saved user immediately
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+
+          setUser(normalizeUser(parsedUser));
+        } catch {
+          localStorage.removeItem("servigo_user");
+        }
+      }
+
       try {
-        const response = await api.get(
-          "/auth/me"
-        );
+        const response = await api.get("/auth/me");
 
-        setUser(normalizeUser(response.data.user));
+        const apiUser =
+          response.data.user || response.data;
+
+        const normalizedUser = normalizeUser(apiUser);
+
+        setUser(normalizedUser);
+
+        localStorage.setItem(
+          "servigo_user",
+          JSON.stringify(normalizedUser)
+        );
       } catch (error) {
-        console.error(
-          "Authentication failed:",
-          error
-        );
+        console.error("Authentication failed:", error);
 
-        // Invalid token
-        localStorage.removeItem(
-          "servigo_token"
-        );
-
-        localStorage.removeItem(
-          "servigo_user"
-        );
+        localStorage.removeItem("servigo_token");
+        localStorage.removeItem("servigo_user");
 
         setUser(null);
       } finally {
@@ -119,9 +119,9 @@ export function AuthProvider({
     loadUser();
   }, []);
 
-  // ========================================
+  // ==========================================
   // LOGIN
-  // ========================================
+  // ==========================================
 
   const login = async (
     email: string,
@@ -130,37 +130,36 @@ export function AuthProvider({
     setLoading(true);
 
     try {
-      const response = await api.post(
-        "/auth/login",
-        {
-          email,
-          password,
-        }
-      );
+      const response = await api.post("/auth/login", {
+        email,
+        password,
+      });
 
-      const {
-        token,
-        user: loggedInUser,
-      } = response.data;
-      const normalizedUser = normalizeUser(loggedInUser);
+      const token = response.data.token;
+      const loggedInUser = response.data.user;
 
-      // Save token
+      if (!token || !loggedInUser) {
+        throw new Error("Invalid login response from server");
+      }
+
+      const normalizedUser =
+        normalizeUser(loggedInUser);
+
       localStorage.setItem(
         "servigo_token",
         token
       );
 
-      // Save user
       localStorage.setItem(
         "servigo_user",
         JSON.stringify(normalizedUser)
       );
 
-      // Update state
       setUser(normalizedUser);
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
+        error.message ||
         "Login failed";
 
       throw new Error(message);
@@ -169,9 +168,9 @@ export function AuthProvider({
     }
   };
 
-  // ========================================
+  // ==========================================
   // REGISTER
-  // ========================================
+  // ==========================================
 
   const register = async (
     name: string,
@@ -192,29 +191,33 @@ export function AuthProvider({
         }
       );
 
-      const {
-        token,
-        user: newUser,
-      } = response.data;
-      const normalizedUser = normalizeUser(newUser);
+      const token = response.data.token;
+      const newUser = response.data.user;
 
-      // Save token
+      if (!token || !newUser) {
+        throw new Error(
+          "Invalid registration response from server"
+        );
+      }
+
+      const normalizedUser =
+        normalizeUser(newUser);
+
       localStorage.setItem(
         "servigo_token",
         token
       );
 
-      // Save user
       localStorage.setItem(
         "servigo_user",
         JSON.stringify(normalizedUser)
       );
 
-      // Update state
       setUser(normalizedUser);
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
+        error.message ||
         "Registration failed";
 
       throw new Error(message);
@@ -223,25 +226,16 @@ export function AuthProvider({
     }
   };
 
-  // ========================================
+  // ==========================================
   // LOGOUT
-  // ========================================
+  // ==========================================
 
   const logout = () => {
-    localStorage.removeItem(
-      "servigo_token"
-    );
-
-    localStorage.removeItem(
-      "servigo_user"
-    );
+    localStorage.removeItem("servigo_token");
+    localStorage.removeItem("servigo_user");
 
     setUser(null);
   };
-
-  // ========================================
-  // PROVIDER
-  // ========================================
 
   return (
     <AuthContext.Provider
@@ -257,10 +251,6 @@ export function AuthProvider({
     </AuthContext.Provider>
   );
 }
-
-// ==========================================
-// CUSTOM HOOK
-// ==========================================
 
 export function useAuth() {
   const context = useContext(AuthContext);

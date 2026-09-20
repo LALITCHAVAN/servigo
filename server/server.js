@@ -13,36 +13,66 @@ import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import { errorHandler } from "./middleware/errorMiddleware.js";
+console.log("SMTP USER:", process.env.SMTP_USER);
+console.log("SMTP PASS EXISTS:", !!process.env.SMTP_PASS);
 
 dotenv.config();
 
 const app = express();
 
 // ==========================================
-// MIDDLEWARE
+// CORS
 // ==========================================
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests without Origin
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log("Blocked by CORS:", origin);
+
+      return callback(
+        new Error("Not allowed by CORS")
+      );
+    },
     credentials: true,
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+    ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   })
 );
 
 app.use(express.json());
 
 // ==========================================
-// DATABASE CONNECTION
-// ==========================================
-
-// ==========================================
-// ROUTES
+// HEALTH ROUTES
 // ==========================================
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "ServiGo API is running",
+    message: "ServiGo API is running 🚀",
   });
 });
 
@@ -53,7 +83,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Authentication routes
+// ==========================================
+// API ROUTES
+// ==========================================
+
 app.use("/api/auth", authRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/professionals", professionalRoutes);
@@ -63,22 +96,51 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/contact", contactRoutes);
+
+// ==========================================
+// ERROR HANDLER
+// ==========================================
+
 app.use(errorHandler);
 
 // ==========================================
-// SERVER
+// DATABASE + SERVER
 // ==========================================
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.error("MONGODB_URI is not configured. Set it in server/.env.");
-  process.exitCode = 1;
-} else {
-  mongoose.connect(MONGODB_URI)
-    .then(() => app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`)))
-    .catch((error) => { console.error("❌ MongoDB Connection Error:", error.message); process.exitCode = 1; });
+  console.error(
+    "❌ MONGODB_URI is not configured"
+  );
+
+  process.exit(1);
 }
+
+const startServer = async () => {
+  try {
+    await mongoose.connect(MONGODB_URI);
+
+    console.log(
+      "✅ MongoDB connected successfully"
+    );
+
+    app.listen(PORT, () => {
+      console.log(
+        `🚀 Server running on port ${PORT}`
+      );
+    });
+  } catch (error) {
+    console.error(
+      "❌ MongoDB Connection Error:",
+      error.message
+    );
+
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;

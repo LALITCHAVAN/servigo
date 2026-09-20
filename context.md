@@ -599,7 +599,7 @@ Use Axios.
 
 Example:
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://servigo-1-dcgj.onrender.com/api";
 
 All frontend API calls should go through a clean API layer where practical.
 
@@ -609,7 +609,7 @@ Use environment variables where appropriate.
 
 Example:
 
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://servigo-1-dcgj.onrender.com/api
 
 ====================================================
 13. CURRENT DEVELOPMENT RULE
@@ -700,7 +700,7 @@ JWT_SECRET=your_secret
 
 Frontend .env may contain:
 
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://servigo-1-dcgj.onrender.com/api
 
 Never hardcode secrets.
 

@@ -1,5 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+
 import api from "../services/api";
 
 import type {
@@ -9,17 +13,47 @@ import type {
   Booking,
   Notification,
 } from "@/types";
-import {
-  services as fallbackServices,
-  professionals as fallbackProfessionals,
-} from "@/data/mockData";
 
-function shouldUseSeededFallback(error: unknown) {
-  if (axios.isAxiosError(error)) {
-    return !error.response || [404, 502, 503].includes(error.response.status);
+// ======================================================
+// CATEGORY NORMALIZER
+// ======================================================
+
+function normalizeCategory(category: any): string {
+  if (!category) return "";
+
+  const value = String(category)
+    .trim()
+    .toLowerCase();
+
+  const categoryMap: Record<string, string> = {
+    "ac repair": "ac-repair",
+    "ac-repair": "ac-repair",
+
+    plumbing: "plumbing",
+
+    electrician: "electrician",
+
+    "home cleaning": "home-cleaning",
+    "home-cleaning": "home-cleaning",
+
+    "appliance repair": "appliance-repair",
+    "appliance-repair": "appliance-repair",
+
+    carpentry: "carpentry",
+
+    painting: "painting",
+
+    salon: "salon",
+    tutor: "tutor",
+    fitness: "fitness",
+    photography: "photography",
+  };
+
+  if (categoryMap[value]) {
+    return categoryMap[value];
   }
 
-  return error instanceof Error && error.message.includes("API returned an invalid collection");
+  return value.replace(/\s+/g, "-");
 }
 
 // ======================================================
@@ -28,39 +62,68 @@ function shouldUseSeededFallback(error: unknown) {
 
 function mapService(item: any): Service {
   return {
-    id: item._id || item.id,
-    slug: item.slug,
-    name: item.name,
-    category: item.category || item.slug,
+    id: item._id || item.id || "",
+
+    slug:
+      item.slug ||
+      String(item.name || item.title || "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-"),
+
+    name: item.name || item.title || "",
+
+    category: normalizeCategory(
+      item.category ||
+        item.categoryName ||
+        item.type
+    ),
+
     icon: item.icon || "🔧",
+
     image: item.image || "",
+
     shortDescription:
       item.shortDescription ||
       item.short_description ||
+      item.description ||
       "",
+
     description: item.description || "",
-    startingPrice:
-      item.startingPrice ||
-      item.starting_price ||
-      0,
+
+    startingPrice: Number(
+      item.startingPrice ??
+        item.starting_price ??
+        item.price ??
+        0
+    ),
+
     rating: Number(item.rating || 0),
-    reviewCount:
-      item.reviewCount ||
-      item.review_count ||
-      0,
-    popular: item.popular || false,
-    bookedCount:
-      item.bookedCount ||
-      item.booked_count ||
-      0,
+
+    reviewCount: Number(
+      item.reviewCount ??
+        item.review_count ??
+        0
+    ),
+
+    popular: Boolean(item.popular),
+
+    bookedCount: Number(
+      item.bookedCount ??
+        item.booked_count ??
+        0
+    ),
+
     whatsIncluded:
       item.whatsIncluded ||
       item.whats_included ||
       [],
+
     whatsNotIncluded:
       item.whatsNotIncluded ||
       item.whats_not_included ||
       [],
+
     faqs: item.faqs || [],
   };
 }
@@ -71,35 +134,58 @@ function mapService(item: any): Service {
 
 function mapProfessional(item: any): Professional {
   return {
-    id: item._id || item.id,
-    name: item.name,
+    id: item._id || item.id || "",
+
+    name: item.name || "",
+
     profession: item.profession || "",
+
     avatar: item.avatar || "",
+
     rating: Number(item.rating || 0),
-    reviewCount:
-      item.reviewCount ||
-      item.review_count ||
-      0,
-    experience: item.experience || 0,
-    completedJobs:
-      item.completedJobs ||
-      item.completed_jobs ||
-      0,
+
+    reviewCount: Number(
+      item.reviewCount ??
+        item.review_count ??
+        0
+    ),
+
+    experience: Number(
+      item.experience || 0
+    ),
+
+    completedJobs: Number(
+      item.completedJobs ??
+        item.completed_jobs ??
+        0
+    ),
+
     location: item.location || "",
-    startingPrice:
-      item.startingPrice ||
-      item.starting_price ||
-      0,
-    verified: item.verified || false,
-    online: item.online || false,
+
+    startingPrice: Number(
+      item.startingPrice ??
+        item.starting_price ??
+        0
+    ),
+
+    verified: Boolean(item.verified),
+
+    online: Boolean(item.online),
+
     bio: item.bio || "",
+
     skills: item.skills || [],
+
     services:
       item.services ||
       item.services_list ||
       [],
-    availability: item.availability || [],
-    portfolio: item.portfolio || [],
+
+    availability:
+      item.availability || [],
+
+    portfolio:
+      item.portfolio || [],
   };
 }
 
@@ -109,7 +195,7 @@ function mapProfessional(item: any): Professional {
 
 function mapBooking(item: any): Booking {
   return {
-    id: item._id || item.id,
+    id: item._id || item.id || "",
 
     serviceId:
       item.serviceId ||
@@ -122,6 +208,7 @@ function mapBooking(item: any): Booking {
       item.serviceName ||
       item.service_name ||
       item.service?.name ||
+      item.service?.title ||
       "",
 
     serviceIcon:
@@ -164,8 +251,11 @@ function mapBooking(item: any): Booking {
       "",
 
     date: item.date || "",
+
     time: item.time || "",
+
     address: item.address || "",
+
     price: Number(item.price || 0),
 
     status: item.status || "pending",
@@ -193,7 +283,7 @@ function mapReview(item: any): Review {
     new Date().toISOString();
 
   return {
-    id: item._id || item.id,
+    id: item._id || item.id || "",
 
     author:
       item.author ||
@@ -207,15 +297,21 @@ function mapReview(item: any): Review {
 
     rating: Number(item.rating || 0),
 
-    text: item.text || "",
+    text:
+      item.text ||
+      item.comment ||
+      "",
 
     serviceUsed:
       item.serviceUsed ||
       item.service_used ||
       item.service?.name ||
+      item.service?.title ||
       "",
 
-    date: new Date(createdDate).toLocaleDateString("en", {
+    date: new Date(
+      createdDate
+    ).toLocaleDateString("en", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -223,8 +319,9 @@ function mapReview(item: any): Review {
 
     professional:
       item.professionalName ||
-      item.professional ||
-      item.professional?.name ||
+      (typeof item.professional === "object"
+        ? item.professional?.name
+        : item.professional) ||
       undefined,
   };
 }
@@ -233,14 +330,16 @@ function mapReview(item: any): Review {
 // NOTIFICATION MAPPER
 // ======================================================
 
-function mapNotification(item: any): Notification {
+function mapNotification(
+  item: any
+): Notification {
   const createdDate =
     item.createdAt ||
     item.created_at ||
     new Date().toISOString();
 
   return {
-    id: item._id || item.id,
+    id: item._id || item.id || "",
 
     type: item.type || "info",
 
@@ -248,15 +347,14 @@ function mapNotification(item: any): Notification {
 
     message: item.message || "",
 
-    read: item.read || false,
+    read: Boolean(item.read),
 
-    createdAt: new Date(createdDate).toLocaleDateString(
-      "en",
-      {
-        day: "numeric",
-        month: "short",
-      }
-    ),
+    createdAt: new Date(
+      createdDate
+    ).toLocaleDateString("en", {
+      day: "numeric",
+      month: "short",
+    }),
   } as Notification;
 }
 
@@ -264,29 +362,76 @@ function mapNotification(item: any): Notification {
 // SERVICES
 // ======================================================
 
-export function useServices() {
+export function useServices(
+  category?: string
+) {
   return useQuery({
-    queryKey: ["services"],
+    queryKey: [
+      "services",
+      category,
+    ],
 
     queryFn: async () => {
-      try {
-        const response = await api.get("/services");
-        const services =
-          response.data.services ||
-          response.data.data ||
-          response.data;
+      console.log(
+        "FETCHING SERVICES..."
+      );
 
-        if (!Array.isArray(services)) {
-          throw new Error("Services API returned an invalid collection");
+      console.log(
+        "SELECTED CATEGORY:",
+        category
+      );
+
+      const response = await api.get(
+        "/services",
+        {
+          params: category
+            ? {
+                category,
+              }
+            : {},
         }
+      );
 
-        return services.map(mapService);
-      } catch (error) {
-        if (!shouldUseSeededFallback(error)) throw error;
-        console.warn("Services API unavailable; showing seeded services.", error);
-        return fallbackServices;
+      console.log(
+        "SERVICES API RESPONSE:",
+        response.data
+      );
+
+      const serviceData =
+        response.data?.services ??
+        response.data?.data ??
+        response.data;
+
+      if (!Array.isArray(serviceData)) {
+        console.error(
+          "INVALID SERVICES RESPONSE:",
+          response.data
+        );
+
+        throw new Error(
+          "Services API returned an invalid collection"
+        );
       }
+
+      const mappedServices =
+        serviceData.map(mapService);
+
+      console.log(
+        "MAPPED SERVICES:",
+        mappedServices
+      );
+
+      console.log(
+        "SERVICES COUNT:",
+        mappedServices.length
+      );
+
+      return mappedServices;
     },
+
+    retry: 1,
+
+    staleTime: 30 * 1000,
   });
 }
 
@@ -294,18 +439,32 @@ export function useServices() {
 // SINGLE SERVICE
 // ======================================================
 
-export function useService(slug: string | undefined) {
+export function useService(
+  slug: string | undefined
+) {
   return useQuery({
-    queryKey: ["service", slug],
+    queryKey: [
+      "service",
+      slug,
+    ],
 
     queryFn: async () => {
-      if (!slug) return null;
+      if (!slug) {
+        return null;
+      }
 
-      const response = await api.get(`/services/${slug}`);
+      const response = await api.get(
+        `/services/${slug}`
+      );
+
+      console.log(
+        "SINGLE SERVICE RESPONSE:",
+        response.data
+      );
 
       const service =
-        response.data.service ||
-        response.data.data ||
+        response.data?.service ??
+        response.data?.data ??
         response.data;
 
       return mapService(service);
@@ -321,26 +480,33 @@ export function useService(slug: string | undefined) {
 
 export function useProfessionals() {
   return useQuery({
-    queryKey: ["professionals"],
+    queryKey: [
+      "professionals",
+    ],
 
     queryFn: async () => {
-      try {
-        const response = await api.get("/professionals");
-        const professionals =
-          response.data.professionals ||
-          response.data.data ||
-          response.data;
+      const response = await api.get(
+        "/professionals"
+      );
 
-        if (!Array.isArray(professionals)) {
-          throw new Error("Professionals API returned an invalid collection");
-        }
+      const professionalData =
+        response.data?.professionals ??
+        response.data?.data ??
+        response.data;
 
-        return professionals.map(mapProfessional);
-      } catch (error) {
-        if (!shouldUseSeededFallback(error)) throw error;
-        console.warn("Professionals API unavailable; showing seeded professionals.", error);
-        return fallbackProfessionals;
+      if (
+        !Array.isArray(
+          professionalData
+        )
+      ) {
+        throw new Error(
+          "Professionals API returned an invalid collection"
+        );
       }
+
+      return professionalData.map(
+        mapProfessional
+      );
     },
   });
 }
@@ -349,21 +515,32 @@ export function useProfessionals() {
 // SINGLE PROFESSIONAL
 // ======================================================
 
-export function useProfessional(id: string | undefined) {
+export function useProfessional(
+  id: string | undefined
+) {
   return useQuery({
-    queryKey: ["professional", id],
+    queryKey: [
+      "professional",
+      id,
+    ],
 
     queryFn: async () => {
-      if (!id) return null;
+      if (!id) {
+        return null;
+      }
 
-      const response = await api.get(`/professionals/${id}`);
+      const response = await api.get(
+        `/professionals/${id}`
+      );
 
       const professional =
-        response.data.professional ||
-        response.data.data ||
+        response.data?.professional ??
+        response.data?.data ??
         response.data;
 
-      return mapProfessional(professional);
+      return mapProfessional(
+        professional
+      );
     },
 
     enabled: !!id,
@@ -374,23 +551,37 @@ export function useProfessional(id: string | undefined) {
 // REVIEWS
 // ======================================================
 
-export function useReviews(serviceName?: string) {
+export function useReviews(
+  serviceName?: string
+) {
   return useQuery({
-    queryKey: ["reviews", serviceName],
+    queryKey: [
+      "reviews",
+      serviceName,
+    ],
 
     queryFn: async () => {
-      const response = await api.get("/reviews", {
-        params: serviceName
-          ? { serviceName }
-          : {},
-      });
+      const response = await api.get(
+        "/reviews",
+        {
+          params: serviceName
+            ? { serviceName }
+            : {},
+        }
+      );
 
       const reviews =
-        response.data.reviews ||
-        response.data.data ||
+        response.data?.reviews ??
+        response.data?.data ??
         response.data;
 
-      return reviews.map(mapReview);
+      if (!Array.isArray(reviews)) {
+        return [];
+      }
+
+      return reviews.map(
+        mapReview
+      );
     },
   });
 }
@@ -399,21 +590,36 @@ export function useReviews(serviceName?: string) {
 // USER BOOKINGS
 // ======================================================
 
-export function useBookings(userId: string | undefined) {
+export function useBookings(
+  userId: string | undefined
+) {
   return useQuery({
-    queryKey: ["bookings", userId],
+    queryKey: [
+      "bookings",
+      userId,
+    ],
 
     queryFn: async () => {
-      if (!userId) return [];
+      if (!userId) {
+        return [];
+      }
 
-      const response = await api.get("/bookings/my");
+      const response = await api.get(
+        "/bookings/my"
+      );
 
       const bookings =
-        response.data.bookings ||
-        response.data.data ||
+        response.data?.bookings ??
+        response.data?.data ??
         response.data;
 
-      return bookings.map(mapBooking);
+      if (!Array.isArray(bookings)) {
+        return [];
+      }
+
+      return bookings.map(
+        mapBooking
+      );
     },
 
     enabled: !!userId,
@@ -425,25 +631,31 @@ export function useBookings(userId: string | undefined) {
 // ======================================================
 
 export function useCreateBooking() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: async (booking: any) => {
-      const response = await api.post(
-        "/bookings",
-        booking
-      );
+    mutationFn: async (
+      booking: any
+    ) => {
+      const response =
+        await api.post(
+          "/bookings",
+          booking
+        );
 
       return (
-        response.data.booking ||
-        response.data.data ||
+        response.data?.booking ??
+        response.data?.data ??
         response.data
       );
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["bookings"],
+        queryKey: [
+          "bookings",
+        ],
       });
     },
   });
@@ -454,7 +666,8 @@ export function useCreateBooking() {
 // ======================================================
 
 export function useUpdateBookingStatus() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
     mutationFn: async ({
@@ -464,21 +677,26 @@ export function useUpdateBookingStatus() {
       id: string;
       status: string;
     }) => {
-      const response = await api.put(
-        `/bookings/${id}/status`,
-        { status }
-      );
+      const response =
+        await api.put(
+          `/bookings/${id}/status`,
+          {
+            status,
+          }
+        );
 
       return (
-        response.data.booking ||
-        response.data.data ||
+        response.data?.booking ??
+        response.data?.data ??
         response.data
       );
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["bookings"],
+        queryKey: [
+          "bookings",
+        ],
       });
     },
   });
@@ -492,19 +710,33 @@ export function useNotifications(
   userId: string | undefined
 ) {
   return useQuery({
-    queryKey: ["notifications", userId],
+    queryKey: [
+      "notifications",
+      userId,
+    ],
 
     queryFn: async () => {
-      if (!userId) return [];
+      if (!userId) {
+        return [];
+      }
 
-      const response = await api.get(
-        "/notifications"
-      );
+      const response =
+        await api.get(
+          "/notifications"
+        );
 
       const notifications =
-        response.data.notifications ||
-        response.data.data ||
+        response.data?.notifications ??
+        response.data?.data ??
         response.data;
+
+      if (
+        !Array.isArray(
+          notifications
+        )
+      ) {
+        return [];
+      }
 
       return notifications.map(
         mapNotification
@@ -520,24 +752,30 @@ export function useNotifications(
 // ======================================================
 
 export function useMarkNotificationRead() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await api.put(
-        `/notifications/${id}/read`
-      );
+    mutationFn: async (
+      id: string
+    ) => {
+      const response =
+        await api.put(
+          `/notifications/${id}/read`
+        );
 
       return (
-        response.data.notification ||
-        response.data.data ||
+        response.data?.notification ??
+        response.data?.data ??
         response.data
       );
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["notifications"],
+        queryKey: [
+          "notifications",
+        ],
       });
     },
   });
@@ -548,25 +786,31 @@ export function useMarkNotificationRead() {
 // ======================================================
 
 export function useCreateReview() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: async (review: any) => {
-      const response = await api.post(
-        "/reviews",
-        review
-      );
+    mutationFn: async (
+      review: any
+    ) => {
+      const response =
+        await api.post(
+          "/reviews",
+          review
+        );
 
       return (
-        response.data.review ||
-        response.data.data ||
+        response.data?.review ??
+        response.data?.data ??
         response.data
       );
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["reviews"],
+        queryKey: [
+          "reviews",
+        ],
       });
     },
   });
