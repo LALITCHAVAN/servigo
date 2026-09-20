@@ -37,14 +37,7 @@ The platform is designed with a modern, responsive UI and smooth animations usin
 
 ### 🛡️ Admin
 
-* Admin authentication
-* Dashboard
-* Manage customers
-* Manage professionals
-* Manage services
-* Manage bookings
-* Monitor reviews
-* Platform management
+* Work in progress
 
 ---
 
