@@ -2,9 +2,18 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
-// Load environment variables FIRST
+// ==========================================
+// LOAD ENVIRONMENT VARIABLES FIRST
+// ==========================================
+
 dotenv.config();
+
+// ==========================================
+// ROUTES
+// ==========================================
 
 import authRoutes from "./routes/authRoutes.js";
 import serviceRoutes from "./routes/serviceRoutes.js";
@@ -15,15 +24,38 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+
 import { errorHandler } from "./middleware/errorMiddleware.js";
+
+// ==========================================
+// SOCKET.IO
+// ==========================================
+
+import { registerLocationSocket } from "./socket/locationSocket.js";
+
+// ==========================================
+// DEBUG ENVIRONMENT
+// ==========================================
 
 console.log("SMTP USER:", process.env.SMTP_USER);
 console.log("SMTP PASS EXISTS:", !!process.env.SMTP_PASS);
 
+// ==========================================
+// EXPRESS APP
+// ==========================================
+
 const app = express();
 
+// Create HTTP server
+// Socket.IO will use this server
+const httpServer = createServer(app);
+
 // ==========================================
-// CORS
+// CORS CONFIGURATION
 // ==========================================
 
 const allowedOrigins = [
@@ -35,11 +67,15 @@ const allowedOrigins = [
 
 console.log("Allowed CORS Origins:", allowedOrigins);
 
+// ==========================================
+// EXPRESS CORS
+// ==========================================
+
 app.use(
   cors({
     origin: function (origin, callback) {
       // Allow requests without Origin
-      // Example: Postman, server-to-server requests
+      // Example: Postman / server-to-server requests
       if (!origin) {
         return callback(null, true);
       }
@@ -72,6 +108,21 @@ app.use(
 );
 
 // ==========================================
+// SOCKET.IO SERVER
+// ==========================================
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST"],
+  },
+});
+
+// Register live-location socket events
+registerLocationSocket(io);
+
+// ==========================================
 // BODY PARSER
 // ==========================================
 
@@ -100,13 +151,21 @@ app.get("/api/health", (req, res) => {
 // ==========================================
 
 app.use("/api/auth", authRoutes);
+
 app.use("/api/services", serviceRoutes);
+
 app.use("/api/professionals", professionalRoutes);
+
 app.use("/api/reviews", reviewRoutes);
+
 app.use("/api/bookings", bookingRoutes);
+
 app.use("/api/notifications", notificationRoutes);
+
 app.use("/api/users", userRoutes);
+
 app.use("/api/admin", adminRoutes);
+
 app.use("/api/contact", contactRoutes);
 
 // ==========================================
@@ -120,21 +179,33 @@ app.use(errorHandler);
 // ==========================================
 
 const PORT = process.env.PORT || 5000;
+
 const MONGODB_URI = process.env.MONGODB_URI;
+
+// ==========================================
+// CHECK MONGODB URI
+// ==========================================
 
 if (!MONGODB_URI) {
   console.error("❌ MONGODB_URI is not configured");
   process.exit(1);
 }
 
+// ==========================================
+// START SERVER
+// ==========================================
+
 const startServer = async () => {
   try {
+    // Connect MongoDB
     await mongoose.connect(MONGODB_URI);
 
     console.log("✅ MongoDB connected successfully");
 
-    app.listen(PORT, () => {
+    // Start HTTP + Socket.IO server
+    httpServer.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🔌 Socket.IO ready on port ${PORT}`);
     });
   } catch (error) {
     console.error(
@@ -146,6 +217,14 @@ const startServer = async () => {
   }
 };
 
+// ==========================================
+// START APPLICATION
+// ==========================================
+
 startServer();
+
+// ==========================================
+// EXPORT APP
+// ==========================================
 
 export default app;

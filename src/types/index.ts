@@ -65,22 +65,40 @@ export type BookingStatus =
   | 'completed'
   | 'cancelled';
 
+export interface BookingLiveLocation {
+  latitude: number | null;
+  longitude: number | null;
+  accuracy: number | null;
+  sharing: boolean;
+  lastUpdated: string | null;
+}
+
 export interface Booking {
   id: string;
+
   serviceId: string;
   serviceName: string;
   serviceIcon: string;
+
   professionalId: string;
   professionalName: string;
   professionalAvatar: string;
+
   customerId: string;
   customerName: string;
+
   date: string;
   time: string;
   address: string;
+
   price: number;
+
   status: BookingStatus;
+
   paymentStatus: 'pending' | 'paid' | 'refunded';
+
+  liveLocation?: BookingLiveLocation;
+
   createdAt: string;
 }
 

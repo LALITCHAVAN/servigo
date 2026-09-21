@@ -39,9 +39,32 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    // Existing location field
+    // This can store the readable address/city.
     location: {
       type: String,
       default: "",
+      trim: true,
+    },
+
+    // New service location
+    // Used for GPS coordinates of the customer's service location.
+    serviceLocation: {
+      address: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      latitude: {
+        type: Number,
+        default: null,
+      },
+
+      longitude: {
+        type: Number,
+        default: null,
+      },
     },
 
     isActive: {
