@@ -340,8 +340,6 @@ The UI adapts to different screen sizes while maintaining smooth animations and 
 Planned improvements include:
 
 * 💳 Online payment integration
-* 📍 Location-based service discovery
-* 🗺️ Google Maps integration
 * 💬 Real-time chat
 * 🔔 Real-time notifications
 * 📧 Advanced email notifications
